@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: backend-deployment
+  namespace: product-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      name: backend-pod
+      namespace: product-ns
+      labels:
+        app: product-service
+    spec:
+      containers:
+      - name: product-service-container
+        image: sahilmandal/product-service:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgres-service:5432/product_db
+        - name: SPRING_PROFILES_ACTIVE
+          value: docker
