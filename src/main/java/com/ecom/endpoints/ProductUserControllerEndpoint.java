@@ -96,7 +96,7 @@ public interface ProductUserControllerEndpoint {
             @RequestParam(defaultValue = "asc") String sortDir);
 
      // testing:
-	@GetMapping("/hello")
+	@GetMapping("/test/hello")
 	public String hello();
 
 }
