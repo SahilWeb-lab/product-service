@@ -143,4 +143,8 @@ public class ProductUserController implements ProductUserControllerEndpoint {
 	            HttpStatus.OK
 	    );
 	}
+
+	public String hello() {
+		return "Hello, Sahil Mandal!!"
+	}
 }

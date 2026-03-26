@@ -95,4 +95,8 @@ public interface ProductUserControllerEndpoint {
             @Parameter(description = "Sort direction: asc or desc")
             @RequestParam(defaultValue = "asc") String sortDir);
 
+     // testing:
+	@GetMapping("/hello")
+	public String hello();
+
 }
