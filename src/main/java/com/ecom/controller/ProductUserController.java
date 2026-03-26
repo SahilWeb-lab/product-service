@@ -145,6 +145,6 @@ public class ProductUserController implements ProductUserControllerEndpoint {
 	}
 
 	public String hello() {
-		return "Hello, Sahil Mandal!!"
+		return "Hello, Sahil Mandal!!";
 	}
 }
