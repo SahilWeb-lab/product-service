@@ -16,6 +16,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -218,131 +220,96 @@ class ProductAdminServiceImplTest {
 	@Test
 	void shouldDeActivateProduct_whenProductIsActive() {
 		Long productId = 1L;
-		
-		Product product = Product.builder()
-				.id(productId)
-				.status(true)
-				.build();
-		
+
+		Product product = Product.builder().id(productId).status(true).build();
+
 //		Mock:
 		when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-		
+
 //		Act:
 		productAdminService.deactivateProduct(productId);
-		
+
 //		Assert:
 		assertFalse(product.getStatus());
 		verify(productRepository).findById(productId);
 		verify(productRepository).save(product);
 	}
-	
+
 	@Test
 	void shouldThrowException_whenProductAlreadyDeActive() {
 		Long productId = 1L;
-		
-		Product product = Product.builder()
-				.id(productId)
-				.status(false)
-				.build();
-		
+
+		Product product = Product.builder().id(productId).status(false).build();
+
 //		Mock: find by productId
 		when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-		
-		ResourceStateException ex = assertThrows(ResourceStateException.class, () -> productAdminService.deactivateProduct(productId));
-		
+
+		ResourceStateException ex = assertThrows(ResourceStateException.class,
+				() -> productAdminService.deactivateProduct(productId));
+
 		assertEquals("Product already deactivated!", ex.getMessage());
 		verify(productRepository).findById(productId);
 		verify(productRepository, never()).save(any(Product.class));
 	}
-	
-	@Test
-	void shouldReturnActiveProductsByCategory_whenStatusIsActive() {
-		
+
+	@ParameterizedTest
+	@CsvSource({
+	    "active",
+	    "inactive",
+	    "all"
+	})
+	void shouldReturnProductsByCategory_basedOnStatus(String status) {
 		Long categoryId = 1L;
-		
 		Page<Product> page = new PageImpl<>(List.of(new Product()));
 		
-		when(productRepository.findByCategoryIdAndStatusTrue(eq(categoryId), any(Pageable.class))).thenReturn(page);
 		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
+	
+		if(status.equals("active"))
+			when(productRepository.findByCategoryIdAndStatusTrue(eq(categoryId), any(Pageable.class))).thenReturn(page);
+		else if(status.equals("inactive"))
+			when(productRepository.findByCategoryIdAndStatusFalse(eq(categoryId), any(Pageable.class))).thenReturn(page);
+		else 
+			when(productRepository.findByCategoryId(eq(categoryId), any(Pageable.class))).thenReturn(page);
 		
-		productAdminService.getProductsByCategory(categoryId, 0, 10, "id", "asc", "active");
+		productAdminService.getProductsByCategory(categoryId, 0, 10, "id", "asc", status);
 		
-		verify(productRepository).findByCategoryIdAndStatusTrue(eq(categoryId), any(Pageable.class));
-		
+//		Verify based on flow:
+		if(status.equals("active"))
+			verify(productRepository).findByCategoryIdAndStatusTrue(eq(categoryId), any(Pageable.class));
+		else if(status.equals("inactive"))
+			verify(productRepository).findByCategoryIdAndStatusFalse(eq(categoryId), any(Pageable.class));
+		else 
+			verify(productRepository).findByCategoryId(eq(categoryId), any(Pageable.class));
 	}
 	
-	@Test
-	void shouldReturnInactiveProductsByCategory_whenStatusIsInActive() {
-		
-		Long categoryId = 1L;
-		
-		Page<Product> page = new PageImpl<>(List.of(new Product()));
-		
-		when(productRepository.findByCategoryIdAndStatusFalse(eq(categoryId), any(Pageable.class))).thenReturn(page);
-		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
-		
-		productAdminService.getProductsByCategory(categoryId, 0, 10, "id", "asc", "inactive");
-		
-		verify(productRepository).findByCategoryIdAndStatusFalse(eq(categoryId), any(Pageable.class));
-		
-	}
-	
-	@Test
-	void shouldReturnAllProductsByCategory() {
-		
-		Long categoryId = 1L;
-		
-		Page<Product> page = new PageImpl<>(List.of(new Product()));
-		
-		when(productRepository.findByCategoryId(eq(categoryId), any(Pageable.class))).thenReturn(page);
-		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
-		
-		productAdminService.getProductsByCategory(categoryId, 0, 10, "id", "asc", "all");
-		
-		verify(productRepository).findByCategoryId(eq(categoryId), any(Pageable.class));
-		
-	}
-	
-	@Test
-	void shouldReturnActiveProductsByBrand_whenStatusIsActive() {
+	@ParameterizedTest
+	@CsvSource({
+	    "active",
+	    "inactive",
+	    "all"
+	})
+	void shouldReturnProductsByBrand_basedOnStatus(String status) {
 		Long brandId = 1L;
-		
 		Page<Product> page = new PageImpl<>(List.of(new Product()));
 		
-		when(productRepository.findByBrandIdAndStatusTrue(eq(brandId), any(Pageable.class))).thenReturn(page);
 		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
-		
-		productAdminService.getProductsByBrand(brandId, 0, 10, "id", "asc", "active");
-		
-		verify(productRepository).findByBrandIdAndStatusTrue(eq(brandId), any(Pageable.class));
-	}
 	
-	@Test
-	void shouldReturnInActiveProductsByBrand_whenStatusIsInActive() {
-		Long brandId = 1L;
+		if(status.equals("active"))
+			when(productRepository.findByBrandIdAndStatusTrue(eq(brandId), any(Pageable.class))).thenReturn(page);
+		else if(status.equals("inactive"))
+			when(productRepository.findByBrandIdAndStatusFalse(eq(brandId), any(Pageable.class))).thenReturn(page);
+		else 
+			when(productRepository.findByBrandId(eq(brandId), any(Pageable.class))).thenReturn(page);
 		
-		Page<Product> page = new PageImpl<>(List.of(new Product()));
+		productAdminService.getProductsByBrand(brandId, 0, 10, "id", "asc", status);
 		
-		when(productRepository.findByBrandIdAndStatusFalse(eq(brandId), any(Pageable.class))).thenReturn(page);
-		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
-		
-		productAdminService.getProductsByBrand(brandId, 0, 10, "id", "asc", "inactive");
-		
-		verify(productRepository).findByBrandIdAndStatusFalse(eq(brandId), any(Pageable.class));
+//		Verify based on flow:
+		if(status.equals("active"))
+			verify(productRepository).findByBrandIdAndStatusTrue(eq(brandId), any(Pageable.class));
+		else if(status.equals("inactive"))
+			verify(productRepository).findByBrandIdAndStatusFalse(eq(brandId), any(Pageable.class));
+		else 
+			verify(productRepository).findByBrandId(eq(brandId), any(Pageable.class));
 	}
-	
-	@Test
-	void shouldReturnAllProductsByBrand_whenStatusIsAll() {
-		Long brandId = 1L;
-		
-		Page<Product> page = new PageImpl<>(List.of(new Product()));
-		
-		when(productRepository.findByBrandId(eq(brandId), any(Pageable.class))).thenReturn(page);
-		when(productMapper.toDTO(any(Product.class))).thenReturn(ProductResponse.builder().build());
-		
-		productAdminService.getProductsByBrand(brandId, 0, 10, "id", "asc", "all");
-		
-		verify(productRepository).findByBrandId(eq(brandId), any(Pageable.class));
-	}
-	
+
 }
