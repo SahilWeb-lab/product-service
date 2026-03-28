@@ -198,12 +198,12 @@ public class ProductAdminServiceImpl implements ProductAdminService {
 	}
 
 	
-	private PageResponse<ProductResponse> pageResponseMapper(Page<Product> page, String sortBy, String sortDir) {
+	public PageResponse<ProductResponse> pageResponseMapper(Page<Product> page, String sortBy, String sortDir) {
 		Page<ProductResponse> pageResponse = page.map(productMapper::toDTO);
 		return PageResponseMapper.fromPage(pageResponse, sortBy, sortDir);
 	}
 	
-	private Product getExistingProduct(Long productId) {
+	public Product getExistingProduct(Long productId) {
 
 	    return productRepository.findById(productId)
 	            .orElseThrow(() -> {
