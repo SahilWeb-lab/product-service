@@ -19,8 +19,6 @@ import com.ecom.model.Product;
 import com.ecom.repository.ProductRepository;
 import com.ecom.repository.ProductSpecification;
 import com.ecom.service.ProductService;
-//import com.micro.payload.PageResponse;
-import com.ecom.validation.ProductValidation;
 import com.micro.payload.PageResponse;
 
 import lombok.RequiredArgsConstructor;
