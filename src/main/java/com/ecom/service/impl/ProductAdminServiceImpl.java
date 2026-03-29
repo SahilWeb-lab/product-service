@@ -17,6 +17,7 @@ import com.ecom.mapper.ProductMapper;
 import com.ecom.model.Product;
 import com.ecom.repository.ProductRepository;
 import com.ecom.service.ProductAdminService;
+import com.ecom.util.PageableUtil;
 import com.ecom.validation.ProductValidation;
 import com.micro.payload.PageResponse;
 
@@ -36,181 +37,169 @@ public class ProductAdminServiceImpl implements ProductAdminService {
 	@Transactional
 	public ProductResponse createProduct(ProductRequest request) {
 
-	    log.info("CreateProduct request: name={}, categoryId={}, brandId={}, actualPrice={}, discountedPrice={}",
-	            request.getName(), request.getCategoryId(), request.getBrandId(),
-	            request.getActualPrice(), request.getDiscountedPrice());
+		log.info("CreateProduct request: name={}, categoryId={}, brandId={}, actualPrice={}, discountedPrice={}",
+				request.getName(), request.getCategoryId(), request.getBrandId(), request.getActualPrice(),
+				request.getDiscountedPrice());
 
-	    // Validation (uncomment when implemented)
-	    // productValidation.validateProduct(request);
+		// Validation (uncomment when implemented)
+		// productValidation.validateProduct(request);
 
-	    Product product = productMapper.toEntity(request);
-	    Product savedProduct = productRepository.save(product);
+		Product product = productMapper.toEntity(request);
+		Product savedProduct = productRepository.save(product);
 
-	    log.info("Product created successfully: id={}, name={}", savedProduct.getId(), savedProduct.getName());
+		log.info("Product created successfully: id={}, name={}", savedProduct.getId(), savedProduct.getName());
 
-	    return productMapper.toDTO(savedProduct);
+		return productMapper.toDTO(savedProduct);
 	}
 
 	@Override
-	public PageResponse<ProductResponse> getAllProducts(Integer pageNo, Integer pageSize, String sortBy,
-	        String sortDir, String status) {
+	public PageResponse<ProductResponse> getAllProducts(Integer pageNo, Integer pageSize, String sortBy, String sortDir,
+			String status) {
 
-	    log.info("GetAllProducts request: pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}",
-	            pageNo, pageSize, sortBy, sortDir, status);
+		log.info("GetAllProducts request: pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}", pageNo, pageSize,
+				sortBy, sortDir, status);
 
-	    Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-	    Sort sort = Sort.by(sortDirection, sortBy);
-	    Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
 
-	    Page<Product> productPage;
+		Page<Product> productPage;
 
-	    if (status.equalsIgnoreCase("active"))
-	        productPage = productRepository.findByStatusTrue(pageable);
-	    else if (status.equalsIgnoreCase("inactive"))
-	        productPage = productRepository.findByStatusFalse(pageable);
-	    else
-	        productPage = productRepository.findAll(pageable);
+		if (status.equalsIgnoreCase("active"))
+			productPage = productRepository.findByStatusTrue(pageable);
+		else if (status.equalsIgnoreCase("inactive"))
+			productPage = productRepository.findByStatusFalse(pageable);
+		else
+			productPage = productRepository.findAll(pageable);
 
-	    log.info("GetAllProducts result: totalElements={}", productPage.getTotalElements());
+		log.info("GetAllProducts result: totalElements={}", productPage.getTotalElements());
 
-	    return pageResponseMapper(productPage, sortBy, sortDir);
+		return pageResponseMapper(productPage, sortBy, sortDir);
 	}
 
 	@Override
 	@Transactional
 	public ProductResponse updateProduct(Long id, ProductRequest request) {
 
-	    log.info("UpdateProduct request: id={}, name={}, categoryId={}, brandId={}",
-	            id, request.getName(), request.getCategoryId(), request.getBrandId());
+		log.info("UpdateProduct request: id={}, name={}, categoryId={}, brandId={}", id, request.getName(),
+				request.getCategoryId(), request.getBrandId());
 
-	    Product existingProduct = getExistingProduct(id);
+		Product existingProduct = getExistingProduct(id);
 
-	    existingProduct.setActualPrice(request.getActualPrice());
-	    existingProduct.setName(request.getName());
-	    existingProduct.setDescription(request.getDescription());
-	    existingProduct.setBrandId(request.getBrandId());
-	    existingProduct.setCategoryId(request.getCategoryId());
-	    existingProduct.setDiscountedPrice(request.getDiscountedPrice());
-	    existingProduct.setStatus(request.getStatus());
+		existingProduct.setActualPrice(request.getActualPrice());
+		existingProduct.setName(request.getName());
+		existingProduct.setDescription(request.getDescription());
+		existingProduct.setBrandId(request.getBrandId());
+		existingProduct.setCategoryId(request.getCategoryId());
+		existingProduct.setDiscountedPrice(request.getDiscountedPrice());
+		existingProduct.setStatus(request.getStatus());
 
-	    Product savedProduct = productRepository.save(existingProduct);
+		Product savedProduct = productRepository.save(existingProduct);
 
-	    log.info("Product updated successfully: id={}, name={}", savedProduct.getId(), savedProduct.getName());
+		log.info("Product updated successfully: id={}, name={}", savedProduct.getId(), savedProduct.getName());
 
-	    return productMapper.toDTO(savedProduct);
+		return productMapper.toDTO(savedProduct);
 	}
 
 	@Override
 	public void activateProduct(Long id) {
 
-	    log.info("ActivateProduct request: productId={}", id);
+		log.info("ActivateProduct request: productId={}", id);
 
-	    Product existingProduct = getExistingProduct(id);
+		Product existingProduct = getExistingProduct(id);
 
-	    if (existingProduct.getStatus()) {
-	        log.warn("Product already active: productId={}", id);
-	        throw new ResourceStateException("Product already activated!");
-	    }
+		if (existingProduct.getStatus()) {
+			log.warn("Product already active: productId={}", id);
+			throw new ResourceStateException("Product already activated!");
+		}
 
-	    existingProduct.setStatus(true);
-	    productRepository.save(existingProduct);
+		existingProduct.setStatus(true);
+		productRepository.save(existingProduct);
 
-	    log.info("Product activated successfully: productId={}", id);
+		log.info("Product activated successfully: productId={}", id);
 	}
 
 	@Override
 	public void deactivateProduct(Long id) {
 
-	    log.info("DeactivateProduct request: productId={}", id);
+		log.info("DeactivateProduct request: productId={}", id);
 
-	    Product existingProduct = getExistingProduct(id);
+		Product existingProduct = getExistingProduct(id);
 
-	    if (!existingProduct.getStatus()) {
-	        log.warn("Product already inactive: productId={}", id);
-	        throw new ResourceStateException("Product already deactivated!");
-	    }
+		if (!existingProduct.getStatus()) {
+			log.warn("Product already inactive: productId={}", id);
+			throw new ResourceStateException("Product already deactivated!");
+		}
 
-	    existingProduct.setStatus(false);
-	    productRepository.save(existingProduct);
+		existingProduct.setStatus(false);
+		productRepository.save(existingProduct);
 
-	    log.info("Product deactivated successfully: productId={}", id);
+		log.info("Product deactivated successfully: productId={}", id);
 	}
 
 	@Override
 	public void deleteProduct(Long id) {
 
-	    log.info("DeleteProduct request: productId={}", id);
+		log.info("DeleteProduct request: productId={}", id);
 
-	    getExistingProduct(id);
-	    productRepository.deleteById(id);
+		getExistingProduct(id);
+		productRepository.deleteById(id);
 
-	    log.info("Product deleted successfully: productId={}", id);
+		log.info("Product deleted successfully: productId={}", id);
 	}
-	
+
 	@Override
 	public PageResponse<ProductResponse> getProductsByCategory(Long categoryId, Integer pageNo, Integer pageSize,
 			String sortBy, String sortDir, String status) {
-		log.info("Fetching products by category: categoryId={}, pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}, ", categoryId, pageNo, pageSize, sortBy, sortDir, status);
-//		Sort:
-//		Sort Direction:
-		Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-		Sort sort = Sort.by(sortDirection, sortBy);
+		log.info(
+				"Fetching products by category: categoryId={}, pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}, ",
+				categoryId, pageNo, pageSize, sortBy, sortDir, status);
 
-		Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
-		
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+
 		Page<Product> productPage = null;
-		if(status.equalsIgnoreCase("active"))
+		if (status.equalsIgnoreCase("active"))
 			productPage = productRepository.findByCategoryIdAndStatusTrue(categoryId, pageable);
-		else if(status.equalsIgnoreCase("inactive"))
+		else if (status.equalsIgnoreCase("inactive"))
 			productPage = productRepository.findByCategoryIdAndStatusFalse(categoryId, pageable);
-		else 
+		else
 			productPage = productRepository.findByCategoryId(categoryId, pageable);
-		
+
 		log.info("Products fetched: totalElements={}", productPage.getTotalElements());
-		
+
 		return pageResponseMapper(productPage, sortBy, sortDir);
 	}
 
 	@Override
 	public PageResponse<ProductResponse> getProductsByBrand(Long brandId, Integer pageNo, Integer pageSize,
 			String sortBy, String sortDir, String status) {
-		
-		log.info("Fetching products by brand: brandId={}, pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}, ", brandId, pageNo, pageSize, sortBy, sortDir, status);
-		
-//		Sort:
-//		Sort Direction:
-		Direction sortDirection = sortDir.equalsIgnoreCase("asc") ? Direction.ASC : Direction.DESC;
-		Sort sort = Sort.by(sortDirection, sortBy);
-		
-		Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
-		
+
+		log.info("Fetching products by brand: brandId={}, pageNo={}, pageSize={}, sortBy={}, sortDir={}, status={}, ",
+				brandId, pageNo, pageSize, sortBy, sortDir, status);
+		Pageable pageable = PageableUtil.createPageable(pageNo, pageSize, sortBy, sortDir);
+
 		Page<Product> productPage = null;
-		if(status.equalsIgnoreCase("active"))
+		if (status.equalsIgnoreCase("active"))
 			productPage = productRepository.findByBrandIdAndStatusTrue(brandId, pageable);
-		else if(status.equalsIgnoreCase("inactive"))
+		else if (status.equalsIgnoreCase("inactive"))
 			productPage = productRepository.findByBrandIdAndStatusFalse(brandId, pageable);
-		else 
+		else
 			productPage = productRepository.findByBrandId(brandId, pageable);
-		
+
 		log.info("Products fetched: totalElements={}", productPage.getTotalElements());
-		
+
 		return pageResponseMapper(productPage, sortBy, sortDir);
 	}
 
-	
 	public PageResponse<ProductResponse> pageResponseMapper(Page<Product> page, String sortBy, String sortDir) {
 		Page<ProductResponse> pageResponse = page.map(productMapper::toDTO);
 		return PageResponseMapper.fromPage(pageResponse, sortBy, sortDir);
 	}
-	
+
 	public Product getExistingProduct(Long productId) {
 
-	    return productRepository.findById(productId)
-	            .orElseThrow(() -> {
-	                log.warn("Product not found: productId={}", productId);
-	                return new ResourceNotFoundException(
-	                        "Product not found with id : [" + productId + "]");
-	            });
+		return productRepository.findById(productId).orElseThrow(() -> {
+			log.warn("Product not found: productId={}", productId);
+			return new ResourceNotFoundException("Product not found with id : [" + productId + "]");
+		});
 	}
 
 }
